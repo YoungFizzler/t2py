@@ -1,11 +1,12 @@
-name: Publish to PyPI
+name: Build and Publish
 
 on:
-  release:
-    types: [published]
+  push:
+    branches: [main, master]
+  workflow_dispatch:  # Allow manual trigger
 
 jobs:
-  deploy:
+  publish:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
@@ -20,6 +21,13 @@ jobs:
         python -m pip install --upgrade pip
         pip install build twine
     
+    - name: Update version
+      run: |
+        # Get commit count for version
+        COMMITS=$(git rev-list --count HEAD)
+        # Update version in pyproject.toml
+        sed -i "s/version = \".*\"/version = \"0.1.$COMMITS\"/" pyproject.toml
+    
     - name: Build package
       run: python -m build
     
@@ -27,5 +35,4 @@ jobs:
       env:
         TWINE_USERNAME: __token__
         TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
-      run: |
-        twine upload dist/* 
+      run: twine upload dist/* 
